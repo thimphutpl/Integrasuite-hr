@@ -8,7 +8,17 @@ frappe.ui.form.on('Employee Separation Clearance', {
 			doc:frm.doc,
 			callback: function(r){     
 				console.log(r.message)
-				toggle_remarks_display(frm, r.message[0], r.message[1], r.message[2], r.message[3], r.message[4])
+				// toggle_remarks_display(frm, r.message[0], r.message[1], r.message[2], r.message[3], r.message[4])
+				toggle_remarks_display(
+					frm,
+					r.message[0], // Supervisor
+					r.message[1], // HR
+					r.message[2], // Finance
+					r.message[3], // Asset Management
+					r.message[4], // Asset Declaration
+					r.message[5], // Internal Audit
+					r.message[6]  // Procurement
+				);
 			}
 		})
 

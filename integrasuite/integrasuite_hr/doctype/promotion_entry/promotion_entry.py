@@ -190,7 +190,13 @@ class PromotionEntry(Document):
         if not new_grade:
             frappe.throw("Promote to Grade not set for Employee {} in Employee Grade".format(employee))
         new_lower_limit = frappe.db.get_value("Employee Grade", new_grade, "lower_limit")
-        new_increment = frappe.db.get_value("Employee Grade", new_grade, "increment_value")
+        method=frappe.db.get_value("Employee Grade", new_grade, "increment_method")
+        increment = frappe.db.get_value("Employee Grade", new_grade, "increment_value")
+        if method =='Percent':
+            new_increment= flt(increment/100)*flt(basic_pay)
+        else:
+            new_increment = frappe.db.get_value("Employee Grade", new_grade, "increment_value")
+        
         new_upper_limit = frappe.db.get_value("Employee Grade", new_grade, "upper_limit")
         # if personal_pay > 0:
         # 	ratio = ((flt(basic_pay) + flt(personal_pay))-flt(new_lower_limit))/flt(new_increment)
@@ -419,6 +425,7 @@ def create_employee_promotion_for_employees(employees, args, publish_progress=Tr
             # -----------------------Salary Details for Employee Promotion/Salary Fixation----------------#
             old_lower_limit = frappe.db.get_value("Employee Grade", emp.employee_grade, "lower_limit")
             old_increment = frappe.db.get_value("Employee Grade", emp.employee_grade, "increment_value")
+            method= frappe.db.get_value("Employee Grade", emp.employee_grade, "increment_method")
             old_upper_limit = frappe.db.get_value("Employee Grade", emp.employee_grade, "upper_limit")
             new_grade = frappe.db.get_value("Employee Grade", emp.employee_grade, "promotion_grade")
             new_lower_limit = frappe.db.get_value("Employee Grade", new_grade, "lower_limit")

@@ -128,16 +128,39 @@ class SalaryIncrement(Document):
 				self.payscale_increment_method = grade.increment_method
 				self.payscale_increment = grade.increment_value
 				self.payscale_maximum   = grade.upper_limit 
-
+				
 				# added by Dawa Tshering
-				if flt(self.total_months) >= 12:
-					self.calculated_increment = round(flt(self.payscale_increment), 0)
+				# if flt(self.total_months) >= 12:
+				# 	self.calculated_increment = round(flt(self.payscale_increment), 0)
+				# else:
+				# 	self.calculated_increment = round(flt(self.payscale_increment)/12 * flt(self.total_months), 0)
+				# self.increment = self.calculated_increment
+				# self.new_basic = flt(self.old_basic) + flt(self.increment)
+				# if flt(self.new_basic) > flt(self.payscale_maximum):
+				# 	self.new_basic = flt(self.payscale_maximum)
+				if self.payscale_increment_method=='Lumpsum':
+					if flt(self.total_months) >= 12:
+						self.calculated_increment = round(flt(self.payscale_increment), 0)
+					else:
+						self.calculated_increment = round(flt(self.payscale_increment)/12 * flt(self.total_months), 0)
+
+					self.increment = self.calculated_increment
+					self.new_basic = flt(self.old_basic) + flt(self.increment)
+					if flt(self.new_basic) > flt(self.payscale_maximum):
+						self.new_basic = flt(self.payscale_maximum)
+
 				else:
-					self.calculated_increment = round(flt(self.payscale_increment)/12 * flt(self.total_months), 0)
-				self.increment = self.calculated_increment
-				self.new_basic = flt(self.old_basic) + flt(self.increment)
-				if flt(self.new_basic) > flt(self.payscale_maximum):
-					self.new_basic = flt(self.payscale_maximum)
+					if flt(self.total_months) >= 12:
+						
+						self.calculated_increment = round(flt(self.old_basic)*flt(self.payscale_increment/100), 0)
+						#frappe.throw(str(increment))
+					else:
+						
+						self.calculated_increment = round((flt(self.old_basic)*flt(self.payscale_increment/100))/12 * flt(self.total_months), 0)
+					self.increment = self.calculated_increment
+					self.new_basic = flt(self.old_basic) + flt(self.increment)
+					if flt(self.new_basic) > flt(self.payscale_maximum):
+						self.new_basic = flt(self.payscale_maximum)
 				'''
 				# Calculating increment
 				if flt(self.total_months) >= flt(self.minimum_months):

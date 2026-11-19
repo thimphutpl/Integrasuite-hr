@@ -437,7 +437,7 @@ class EmployeeBenefits(Document):
 @frappe.whitelist()
 def get_basic_salary(employee):
     amount = 0
-    query = "select d.amount from `tabSalary Structure` s, `tabSalary Detail` d where s.name = d.parent and s.employee=\'" + str(employee) + "\' and d.salary_component in ('Basic Pay') and s.is_active='Yes'"
+    query = "select d.amount from `tabSalary Structure` s, `tabSalary Detail` d where s.name = d.parent and s.employee=\'" + str(employee) + "\' and d.salary_component in ('Basic Salary') and s.is_active='Yes'"
     data = frappe.db.sql(query, as_dict=True)
     if not data:
         frappe.throw("Basic Salary is not been assigned to the employee.")
@@ -449,7 +449,7 @@ def get_basic_salary(employee):
 @frappe.whitelist()
 def get_leave_encashment_amount(employee, date):
     basic_pay = amount = 0
-    query = "select d.amount from `tabSalary Structure` s, `tabSalary Detail` d where s.name = d.parent and s.employee=\'" + str(employee) + "\' and d.salary_component in ('Basic Pay') and s.is_active='Yes'"
+    query = "select d.amount from `tabSalary Structure` s, `tabSalary Detail` d where s.name = d.parent and s.employee=\'" + str(employee) + "\' and d.salary_component in ('Basic Salary') and s.is_active='Yes'"
     data = frappe.db.sql(query, as_dict=True)
     if not data:
         frappe.throw("Basic Salary is not been assigned to the employee.")
@@ -541,6 +541,28 @@ def get_pf_employer(employee):
 
     basic_salary= get_basic_salary(employee)
     amount = flt(flt(flt(employee_pf_percentage)/100)*flt(basic_salary)*flt(months))
+    return amount
+
+@frappe.whitelist()
+def get_gis(employee):
+    
+    date_of_joining = frappe.db.get_value("Employee", employee, "date_of_joining")
+    today_date = date.today()
+    years=flt(((today_date-date_of_joining).days)/365)
+
+    # if years<5:
+    #     return 0
+
+    months = years*12
+    months = (math.floor(months)-1)
+    
+    employee_grade = frappe.db.get_value("Employee", employee, "grade")
+
+    gis = flt(frappe.db.get_value("Employee Grade",employee_grade,"gis"))
+    
+
+    
+    amount = flt(flt(flt(gis)* 70/100)*flt(months))
     return amount
 
 

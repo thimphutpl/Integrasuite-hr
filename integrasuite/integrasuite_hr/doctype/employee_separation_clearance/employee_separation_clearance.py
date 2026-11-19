@@ -89,6 +89,32 @@ class EmployeeSeparationClearance(Document):
         ):
             self.send_notification(self.ada)
             return
+    def validate_clearance_approvals(self):
+        old_doc = self.get_doc_before_save()
+
+        sections = (
+            ("supervisor", "Supervisor"),
+            ("afd", "Finance & Investment Division"),
+            ("ams", "Asset Management"),
+            ("icthr", "Human Resource & Administration"),
+            ("iad", "Internal Audit"),
+            ("ada", "Asset Declaration Administrator"),
+            ("pc", "Procurement and Contracts"),
+        )
+
+        for field, label in sections:
+            clearance_field = f"{field}_clearance"
+            was_approved = old_doc.get(clearance_field) if old_doc else 0
+
+            # Check every newly granted clearance, including on new documents.
+            if self.get(clearance_field) and not was_approved:
+                approver = self.get(field)
+
+                if not approver or frappe.session.user != approver:
+                    frappe.throw(
+                        _("Only the assigned approver can grant {0} clearance.")
+                        .format(label)
+                )
     def workflow_action(self):  
         action = frappe.request.form.get('action')
         
@@ -484,6 +510,7 @@ def make_employee_benefit(source_name, target_doc=None, skip_item_mapping=False)
 
 # Following code added by SHIV on 2020/09/21
 def get_permission_query_conditions(user):
+    #frappe.throw(str(user))
     if not user: user = frappe.session.user
     user_roles = frappe.get_roles(user)
     

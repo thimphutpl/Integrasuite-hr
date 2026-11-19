@@ -120,7 +120,8 @@ def get_officiating_employee(employee):
 	if not employee:
 		frappe.throw("Employee is Mandatory")
 		
-	qry = "select officiating_employee from `tabOfficiating Employee` where docstatus = 1 and revoked != 1 and %(today)s between from_date and to_date and employee = %(employee)s order by creation desc limit 1"
+	# qry = "select officiating_employee from `tabOfficiating Employee` where docstatus = 1 and revoked != 1 and %(today)s between from_date and to_date and employee = %(employee)s order by creation desc limit 1"
+	qry = "select officiate from `tabOfficiating Employee` where docstatus = 1 and revoked != 1 and %(today)s between from_date and to_date and employee = %(employee)s order by creation desc limit 1"
 	officiate = frappe.db.sql(qry, {"today": nowdate(), "employee": employee}, as_dict=True)
 
 	if officiate:
@@ -255,6 +256,24 @@ def get_approver(employee):
 
 	return approver
 
+@frappe.whitelist()
+def get_leave_approver(employee):
+	
+	deg=frappe.db.get_value("Employee", employee, "designation")
+	if not deg:
+		frappe.throw("Set designation in employee master")
+	if deg=='Chief Executive Officer':
+
+		approver = frappe.db.get_value("Employee", employee, "user_id")
+		#frappe.throw(str(approver))
+	else:
+		approver = frappe.db.get_value("Employee", employee, "leave_approver")
+		if not approver:
+			frappe.throw("Set Leave Approver in Employee Master")
+		#approver = frappe.db.get_value("Employee", empid, "user_id")
+
+
+	return approver
 
 @frappe.whitelist()
 def get_reports_to(employee):

@@ -65,56 +65,107 @@ class TargetSetUp(Document):
 
 		if not self.competency:
 			frappe.throw(_('Competency cannot be empty'))
+	# @frappe.whitelist()	
+	# def get_competency(self):
+	# 	# fetch employee category based on employee designation
+	# 	employee_category = frappe.db.sql("""
+	# 			SELECT 
+	# 				ec.employee_category 
+	# 			FROM 
+	# 				`tabEmployee Category` ec 
+	# 			INNER JOIN 
+	# 				`tabEmployee Category Group` ecg
+	# 			ON 
+	# 				ec.name = ecg.parent 
+	# 			WHERE 
+	# 				ecg.designation = '{}'
+	# 	""".format(self.designation), as_dict=True)
+	# 	if not employee_category:
+	# 		frappe.throw(
+	# 			_('Your designation <b>{0}</b> is not defined in the Employee Category. Contact your HR for necessary changes'.format(self.designation)))
+
+	# 	# get competency applicable to particular category
+	# 	data = frappe.db.sql("""
+	# 		SELECT 
+	# 			wc.competency,wc.weightage,wc.description
+	# 		FROM 
+	# 			`tabWork Competency` wc 
+	# 		INNER JOIN
+	# 			`tabWork Competency Item` wci 
+	# 		ON 
+	# 			wc.name = wci.parent 
+	# 		WHERE	
+	# 			wci.applicable = 1 
+	# 		AND 
+	# 			wci.employee_category = '{0}' 
+	# 		AND 
+	# 			wc.disable=0
+	# 		ORDER BY 
+	# 			wc.competency
+	# 	""".format(employee_category[0].employee_category), as_dict=True)
+	# 	# frappe.msgprint(format(data))
+	# 	if not data:
+	# 		frappe.throw(_('There are no Work Competency defined'))
+	# 	# set competency item values
+	# 	self.set('competency', [])
+	# 	for d in data:
+	# 		row = self.append('competency', {})
+	# 		row.update(d)
 		
+	# def calculate_total_weightage(self):
+	# 	total = 0
+	# 	for item in self.target_item :
+	# 		total += flt(item.weightage)
+	# 	self.total_weightage = total
+	@frappe.whitelist()
 	def get_competency(self):
-		# fetch employee category based on employee designation
-		employee_category = frappe.db.sql("""
-				SELECT 
-					ec.employee_category 
-				FROM 
-					`tabEmployee Category` ec 
-				INNER JOIN 
-					`tabEmployee Category Group` ecg
-				ON 
-					ec.name = ecg.parent 
-				WHERE 
-					ecg.designation = '{}'
-		""".format(self.designation), as_dict=True)
+		employee_category = frappe.db.sql(
+			"""
+			SELECT ec.employee_category
+			FROM `tabEmployee Category` ec
+			INNER JOIN `tabEmployee Category Group` ecg
+				ON ec.name = ecg.parent
+			WHERE ecg.designation = %s
+			""",
+			values=(self.designation,),
+			as_dict=True,
+		)
+
 		if not employee_category:
 			frappe.throw(
-				_('Your designation <b>{0}</b> is not defined in the Employee Category. Contact your HR for necessary changes'.format(self.designation)))
+				_(
+					"Your designation <b>{0}</b> is not defined in the Employee Category. "
+					"Contact your HR for necessary changes"
+				).format(self.designation)
+			)
 
-		# get competency applicable to particular category
-		data = frappe.db.sql("""
-			SELECT 
-				wc.competency,wc.weightage,wc.description
-			FROM 
-				`tabWork Competency` wc 
-			INNER JOIN
-				`tabWork Competency Item` wci 
-			ON 
-				wc.name = wci.parent 
-			WHERE	
-				wci.applicable = 1 
-			AND 
-				wci.employee_category = '{0}' 
-			AND 
-				wc.disable=0
-			ORDER BY 
-				wc.competency
-		""".format(employee_category[0].employee_category), as_dict=True)
-		# frappe.msgprint(format(data))
+		data = frappe.db.sql(
+			"""
+			SELECT wc.competency, wc.weightage, wc.description
+			FROM `tabWork Competency` wc
+			INNER JOIN `tabWork Competency Item` wci
+				ON wc.name = wci.parent
+			WHERE wci.applicable = 1
+				AND wci.employee_category = %s
+				AND wc.disable = 0
+			ORDER BY wc.competency
+			""",
+			values=(employee_category[0].employee_category,),
+			as_dict=True,
+		)
+
 		if not data:
-			frappe.throw(_('There are no Work Competency defined'))
-		# set competency item values
-		self.set('competency', [])
-		for d in data:
-			row = self.append('competency', {})
-			row.update(d)
-		
+			frappe.throw(_("There are no Work Competency defined"))
+
+		self.set("competency", [])
+		for competency in data:
+			row = self.append("competency", {})
+			row.update(competency)
+
+	@frappe.whitelist()
 	def calculate_total_weightage(self):
 		total = 0
-		for item in self.target_item :
+		for item in self.target_item:
 			total += flt(item.weightage)
 		self.total_weightage = total
 def get_permission_query_conditions(user):

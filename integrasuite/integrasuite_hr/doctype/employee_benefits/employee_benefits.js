@@ -73,7 +73,7 @@ frappe.ui.form.on("Separation Item", {
 		frappe.model.set_value(cdt, cdn, "terrain_rate", null);
 		frappe.model.set_value(cdt, cdn, "load_capacity", null);
 		if (frm.doc.purpose != "Separation" && frm.doc.purpose != "Upgradation") {
-			if (row.benefit_type == "Provision for Leave Encashment") {
+			if (row.benefit_type == "Leave encashment") {
 				frappe.model.set_value(cdt, cdn, "amount", null);
 				frappe.model.set_value(cdt, cdn, "earned_leave_balance", null);
 				frappe.model.set_value(cdt, cdn, "benefit_type", null);
@@ -92,13 +92,13 @@ frappe.ui.form.on("Separation Item", {
 			frappe.model.set_value(cdt, cdn, "terrain_rate", null);
 			frappe.model.set_value(cdt, cdn, "load_capacity", null);
 		}
-		else if (row.benefit_type != "Provision for Leave Encashment") {
+		else if (row.benefit_type != "Leave encashment") {
 			frappe.model.set_value(cdt, cdn, "earned_leave_balance", null);
 		}
 		var item = locals[cdt][cdn]
 		if (item.benefit_type == "Transfer Grant(Normal)" || item.benefit_type == "Provision for Travel Allowance(Repatriation)" || item.benefit_type == "Separation for transfer Grant") {
 			return frappe.call({
-				method: "hrms.hr.doctype.employee_benefits.employee_benefits.get_basic_salary",
+				method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_basic_salary",
 				args: { "employee": frm.doc.employee },
 				callback: function (r) {
 					console.log(r.message);
@@ -109,7 +109,7 @@ frappe.ui.form.on("Separation Item", {
 				}
 			});
 		}
-		else if (item.benefit_type == "Provision for Employee Gratuity Fund") {
+		else if (item.benefit_type == "Gratuity") {
 			return frappe.call({
 				method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_gratuity_amount",
 				args: { "employee": frm.doc.employee },
@@ -122,11 +122,11 @@ frappe.ui.form.on("Separation Item", {
 				}
 			});
 		}
-		else if (item.benefit_type == "Provision for Leave Encashment") {
+		else if (item.benefit_type == "Leave encashment") {
 			if (frm.doc.purpose == "Separation") {
 				if (frm.doc.separation_date && frm.doc.employee) {
 					return frappe.call({
-						method: "hrms.hr.doctype.employee_benefits.employee_benefits.get_leave_encashment_amount",
+						method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_leave_encashment_amount",
 						args: { "employee": frm.doc.employee, "date": frm.doc.separation_date },
 						callback: function (r) {
 							console.log(r.message);
@@ -146,7 +146,7 @@ frappe.ui.form.on("Separation Item", {
 			else if (frm.doc.purpose == "Upgradation") {
 				if (frm.doc.posting_date && frm.doc.employee) {
 					return frappe.call({
-						method: "hrms.hr.doctype.employee_benefits.employee_benefits.get_leave_encashment_amount",
+						method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_leave_encashment_amount",
 						args: { "employee": frm.doc.employee, "date": frm.doc.posting_date },
 						callback: function (r) {
 							console.log(r.message);
@@ -168,7 +168,7 @@ frappe.ui.form.on("Separation Item", {
 			}
 		} else if (item.benefit_type == "LTC") {
 			return frappe.call({
-				method: "hrms.hr.doctype.employee_benefits.employee_benefits.get_ltc_amount",
+				method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_ltc_amount",
 				args: { "employee": frm.doc.employee, "date": frm.doc.posting_date },
 				callback: function (r) {
 					console.log(r.message);
@@ -180,7 +180,7 @@ frappe.ui.form.on("Separation Item", {
 			});
 		} else if (item.benefit_type == "PF-Employee") {
 			return frappe.call({
-				method: "hrms.hr.doctype.employee_benefits.employee_benefits.get_pf_employee",
+				method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_pf_employee",
 				args: { "employee": frm.doc.employee },
 				callback: function (r) {
 					console.log(r.message);
@@ -192,7 +192,7 @@ frappe.ui.form.on("Separation Item", {
 			});
 		} else if (item.benefit_type == "PF-Employer") {
 			return frappe.call({
-				method: "hrms.hr.doctype.employee_benefits.employee_benefits.get_pf_employer",
+				method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_pf_employer",
 				args: { "employee": frm.doc.employee },
 				callback: function (r) {
 					console.log(r.message);
@@ -203,6 +203,20 @@ frappe.ui.form.on("Separation Item", {
 				}
 			});
 		}
+		else if (item.benefit_type == "GIS") {
+			return frappe.call({
+				method: "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_gis",
+				args: { "employee": frm.doc.employee },
+				callback: function (r) {
+					console.log(r.message);
+					if (r.message) {
+						frappe.model.set_value(cdt, cdn, "amount", r.message);
+					}
+					frm.refresh_fields()
+				}
+			});
+		}
+
 
 	},
 
@@ -287,9 +301,9 @@ var get_outstanding_amount = function (frm, cdt, cdn) {
 
 var set_tax_amount = function (frm, cdt, cdn) {
 	var row = locals[cdt][cdn];
-	if (row.benefit_type == "Leave Encashment") {
+	if (row.benefit_type == "Leave encashment") {
 		frappe.call({
-			"method": "hrms.hr.doctype.employee_benefits.employee_benefits.get_leave_encashment_tax",
+			"method": "integrasuite.integrasuite_hr.doctype.employee_benefits.employee_benefits.get_leave_encashment_tax",
 			"args": {
 				amount: row.amount,
 				benefit_type: row.benefit_type

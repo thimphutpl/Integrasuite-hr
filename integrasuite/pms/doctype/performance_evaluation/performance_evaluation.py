@@ -127,7 +127,7 @@ class PerformanceEvaluation(Document):
             return
         employee = frappe.db.get_value("Employee",{'user_id':frappe.session.user},"name")
         self.employee = employee
-        
+    @frappe.whitelist()  
     def get_target(self):
         data = frappe.db.sql("""
 			SELECT 
@@ -158,7 +158,7 @@ class PerformanceEvaluation(Document):
         for d in data:
             row = self.append('evaluate_target_item', {})
             row.update(d)
-
+    @frappe.whitelist()
     def get_competency(self):
         data = frappe.db.sql("""
 		SELECT
@@ -188,7 +188,7 @@ class PerformanceEvaluation(Document):
         for d in data:
             row = self.append('evaluate_competency_item', {})
             row.update(d)
-
+    @frappe.whitelist()
     def get_additional_achievements(self):
         data = frappe.db.sql("""
             SELECT 

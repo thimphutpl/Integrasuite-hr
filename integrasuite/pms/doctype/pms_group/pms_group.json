@@ -1,4 +1,5 @@
 {
+ "actions": [],
  "allow_rename": 1,
  "autoname": "field:group_name",
  "creation": "2021-03-04 16:56:15.115542",
@@ -47,7 +48,8 @@
    "label": "Required to set target"
   }
  ],
- "modified": "2021-07-08 11:52:14.470172",
+ "links": [],
+ "modified": "2026-11-12 14:48:12.453021",
  "modified_by": "Administrator",
  "module": "PMS",
  "name": "PMS Group",
@@ -102,8 +104,9 @@
    "write": 1
   }
  ],
- "quick_entry": 1,
+ "row_format": "Dynamic",
  "sort_field": "modified",
  "sort_order": "DESC",
+ "states": [],
  "track_changes": 1
 }

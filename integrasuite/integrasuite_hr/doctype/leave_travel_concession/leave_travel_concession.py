@@ -289,6 +289,7 @@ class LeaveTravelConcession(Document):
 				else:
 					#frappe.msgprint(str(months_diff))
 					if min_mnt < months_diff:
+						#frappe.throw("hiii")
 						d.amount=d.basic_pay
 						if d.basic_pay > ltc_amt:
 							d.amount = ltc_amt
@@ -296,6 +297,7 @@ class LeaveTravelConcession(Document):
 						
 
 					else:
+						#frappe.throw("hiiiiuiio")
 						continue
 						
 					

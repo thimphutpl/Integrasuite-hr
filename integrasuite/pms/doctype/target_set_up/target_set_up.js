@@ -57,7 +57,7 @@ var add_btn = (frm)=>{
 	if ( frm.doc.docstatus == 1 && frappe.session.user == frm.doc.owner ){
 		frm.add_custom_button(__('Create Review'), ()=>{
 			frappe.model.open_mapped_doc({
-				method: "erpnext.pms.doctype.target_set_up.target_set_up.create_review",	
+				method: "integrasuite.pms.doctype.target_set_up.target_set_up.create_review",	
 				frm: cur_frm
 			});
 		}).addClass("btn-primary custom-create custom-create-css");

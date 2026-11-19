@@ -25,7 +25,7 @@ var add_btn = (frm)=>{
 	if (frm.doc.docstatus == 1 ){
 		frm.add_custom_button(__('Give Evaluation'), ()=>{
 			frappe.model.open_mapped_doc({
-				method: "erpnext.pms.doctype.review.review.create_review",	
+				method: "integrasuite.pms.doctype.review.review.create_review",	
 				frm: cur_frm
 			});
 		}, __('Evaluate'));

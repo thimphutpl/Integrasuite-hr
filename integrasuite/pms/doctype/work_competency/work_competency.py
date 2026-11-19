@@ -7,6 +7,8 @@ import frappe
 from frappe.model.document import Document
 
 class WorkCompetency(Document):
+	
+	@frappe.whitelist()
 	def get_employee_category(self):
 		self.set('employee_category_item', [])
 		data = frappe.db.sql("""
