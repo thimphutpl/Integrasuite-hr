@@ -12,7 +12,7 @@ from erpnext.accounts.utils import get_fiscal_year
 from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
 # from erpnext.accounts.doctype.business_activity.business_activity import get_default_ba
 import math
-
+from integrasuite.integrasuite_hr.doctype.custom_workflow.custom_workflow import custom_validate_workflow
 class PromotionEntry(Document):
     def onload(self):
         if not self.docstatus==1 or self.promotions_submitted:
@@ -26,6 +26,7 @@ class PromotionEntry(Document):
     def validate(self):
         self.set_month_dates()
         self.check_increment_cycle()
+        custom_validate_workflow(self)
 
     def on_submit(self):
         if self.month_name != "July":

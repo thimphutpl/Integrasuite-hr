@@ -52,7 +52,7 @@
    "mandatory_depends_on": "eval:doc.type=='Is Custom Approver'"
   },
   {
-   "depends_on": "eval:doc.type=='Is Owner'",
+   "depends_on": "eval:doc.type=='Is Owner' || doc.type=='Is Approver'",
    "fieldname": "send_email_field_name",
    "fieldtype": "Select",
    "label": "Send Email Field Name"
@@ -66,7 +66,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval:doc.type=='Is Role Based'",
+   "depends_on": "eval:doc.type=='Is Role Based' ||doc.type=='Is Approver'",
    "fieldname": "is_sent_notification_status",
    "fieldtype": "Check",
    "label": "Is Sent Notification Status "
@@ -76,7 +76,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-10-05 20:50:36.907046",
+ "modified": "2026-11-22 13:10:01.052842",
  "modified_by": "Administrator",
  "module": "Integrasuite HR",
  "name": "Workflow State Item",

@@ -5,6 +5,8 @@ import frappe
 from frappe import _
 from frappe.utils import getdate,flt,cint,today,add_to_date,time_diff_in_hours,nowdate
 from frappe.model.document import Document
+from integrasuite.integrasuite_hr.doctype.custom_workflow.custom_workflow import custom_validate_workflow
+
 # from erpnext.custom_workflow import validate_workflow_states, notify_workflow_states
 from datetime import datetime
 class OvertimeApplication(Document):
@@ -13,10 +15,12 @@ class OvertimeApplication(Document):
 		self.validate_dates()
 		self.calculate_totals()
 		self.validate_eligible_creteria()
+
 		# if self.workflow_state != "Approved":
 		# 	notify_workflow_states(self)
 		self.processed = 0
 		self.validate_total_claim_amount()
+		custom_validate_workflow(self)
 	
 	def validate_total_claim_amount(self):
 		if self.total_amount and flt(self.total_amount) <= 0:

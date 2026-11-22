@@ -14,7 +14,7 @@ from integrasuite.custom_function.hr_custom_function import get_salary_tax
 from hrms.hr.doctype.leave_application.leave_application \
     import get_leave_balance_on, get_leaves_for_period
 import math
-
+from integrasuite.integrasuite_hr.doctype.custom_workflow.custom_workflow import custom_validate_workflow
 class EmployeeBenefits(Document):
     def validate(self):
         # self.set_separaton_date()
@@ -30,7 +30,7 @@ class EmployeeBenefits(Document):
         self.validate_benefits()
         self.set_netamount()
         self.set_total()
-        self.workflow_action()
+        custom_validate_workflow
 
     def on_submit(self):
         if self.purpose == "Separation":
@@ -76,73 +76,73 @@ class EmployeeBenefits(Document):
     # 	elif self.workflow_state == "Claimed":
     # 		user_email = frappe.db.get_value("Employee", self.employee, "user_id")
     # 		self.notify(user_email)
-    def workflow_action(self):
-        action = frappe.form_dict.get("action")
+    # def workflow_action(self):
+    #     action = frappe.form_dict.get("action")
 
-        workflow_state = self.get("workflow_state")
+    #     workflow_state = self.get("workflow_state")
 
-        if action in ("Apply", "Reapply"):
-            if self.benefit_approver:
-                self.notify(self.benefit_approver)
+    #     if action in ("Apply", "Reapply"):
+    #         if self.benefit_approver:
+    #             self.notify(self.benefit_approver)
 
-        elif action == "Approve" and workflow_state == "Approved":
+    #     elif action == "Approve" and workflow_state == "Approved":
 
-            recipients = []
+    #         recipients = []
 
-            users = frappe.db.sql(
-                """
-                SELECT u.name
-                FROM `tabUser` u
-                INNER JOIN `tabHas Role` r
-                    ON u.name = r.parent
-                WHERE r.role IN ("Accounts User", "Accounts Manager")
-                    AND u.name LIKE %s
-                    AND EXISTS (
-                        SELECT 1
-                        FROM `tabAssign Branch` b
-                        INNER JOIN `tabBranch Item` i
-                            ON b.name = i.parent
-                        WHERE i.branch = %s
-                        AND b.user = u.name
-                    )
-                GROUP BY u.name
-                """,
-                ("%bdb.bt", self.branch),
-                as_dict=True,
-            )
+    #         users = frappe.db.sql(
+    #             """
+    #             SELECT u.name
+    #             FROM `tabUser` u
+    #             INNER JOIN `tabHas Role` r
+    #                 ON u.name = r.parent
+    #             WHERE r.role IN ("Accounts User", "Accounts Manager")
+    #                 AND u.name LIKE %s
+    #                 AND EXISTS (
+    #                     SELECT 1
+    #                     FROM `tabAssign Branch` b
+    #                     INNER JOIN `tabBranch Item` i
+    #                         ON b.name = i.parent
+    #                     WHERE i.branch = %s
+    #                     AND b.user = u.name
+    #                 )
+    #             GROUP BY u.name
+    #             """,
+    #             ("%bdb.bt", self.branch),
+    #             as_dict=True,
+    #         )
 
-            for user in users:
-                recipients.append(user.name)
+    #         for user in users:
+    #             recipients.append(user.name)
 
-            if recipients:
-                self.notify(recipients)
+    #         if recipients:
+    #             self.notify(recipients)
 
-        elif workflow_state == "Claimed":
+    #     elif workflow_state == "Claimed":
 
-            user_email = frappe.db.get_value(
-                "Employee",
-                self.employee,
-                "user_id"
-            )
+    #         user_email = frappe.db.get_value(
+    #             "Employee",
+    #             self.employee,
+    #             "user_id"
+    #         )
 
-            if user_email:
-                self.notify(user_email)
-    def notify(self, recipients):
-        parent_doc = frappe.get_doc(self.doctype, self.name)
-        args = parent_doc.as_dict()
-        args.workflow_state = self.workflow_state
-        try:
-            email_template = frappe.get_doc("Email Template", 'Employee Benefits Status Notification')
-            message = frappe.render_template(email_template.response, args)
-            subject = email_template.subject
+    #         if user_email:
+    #             self.notify(user_email)
+    # def notify(self, recipients):
+    #     parent_doc = frappe.get_doc(self.doctype, self.name)
+    #     args = parent_doc.as_dict()
+    #     args.workflow_state = self.workflow_state
+    #     try:
+    #         email_template = frappe.get_doc("Email Template", 'Employee Benefits Status Notification')
+    #         message = frappe.render_template(email_template.response, args)
+    #         subject = email_template.subject
         
-            frappe.sendmail(
-                recipients=recipients,
-                subject=_(subject),
-                message= _(message), 
-            )
-        except :
-            frappe.msgprint(_("Employee Benefit Claim Status Notification is missing."))
+    #         frappe.sendmail(
+    #             recipients=recipients,
+    #             subject=_(subject),
+    #             message= _(message), 
+    #         )
+    #     except :
+    #         frappe.msgprint(_("Employee Benefit Claim Status Notification is missing."))
 
     def set_total(self):
         ''' validate amounts in benefits and deductions '''

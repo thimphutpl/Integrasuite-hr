@@ -2,6 +2,23 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on('Overtime Application', {
+	setup: function (frm) {
+		if (frappe.session.user === "Administrator" || frappe.user.has_role("HR Manager") ||
+		frappe.user.has_role("HR User")) {
+            return;
+        }
+		
+        frm.set_query("employee", function () {
+            return {
+                filters: {
+                    user_id: frappe.session.user,
+                    status: "Active"
+                }
+            };
+       
+		});
+		// frm.set_query("employee", erpnext.queries.employee);
+	},
 	onload: function(frm) {
 		if(!frm.doc.posting_date) {
 			frm.set_value("posting_date", get_today())
@@ -34,11 +51,29 @@ frappe.ui.form.on('Overtime Application', {
         //         });	
 		// set_approver(frm);
 	},
-	approver: function(frm) {
-		if(frm.doc.approver){
-			frm.set_value("approver_name", frappe.user.full_name(frm.doc.approver));
+	employee: function (frm) {
+		
+		frm.trigger("set_reports_to");
+		
+	},
+
+	set_reports_to: function (frm) {
+		if (frm.doc.employee) {
+			console.log("hi")
+			return frappe.call({
+				method: "integrasuite.custom_function.hr_custom_function.get_reports_to",
+				args: {
+					employee: frm.doc.employee,
+				},
+				callback: function (r) {
+					if (r && r.message) {
+						frm.set_value("report_to", r.message);
+					}
+				},
+			});
 		}
 	},
+
 	
 	rate: function(frm) {
 		frm.set_value("total_amount", flt(frm.doc.rate) * flt(frm.doc.total_hours))

@@ -60,7 +60,22 @@ def custom_validate_workflow(doc):
                 if user != approver:
                     frappe.throw(
                         f"Only {approver} has permission to approve this document")
-                notification_approver(doc)
+
+                if item.is_sent_notification_status:
+                    email_sender_field = item.send_email_field_name
+                    email_sender= getattr(doc, email_sender_field, None)
+                    if not email_sender:
+                        frappe.throw("set Email sender field custom work flow")
+                    
+                    #frappe.throw(str(email_sender))
+                    if user != doc.owner:
+                        frappe.throw(
+                            f"Only {doc.owner} has permission to move to state '{doc.workflow_state}'"
+                        )
+                    notification_status(doc,email_sender)
+                else:
+                    notification_approver(doc)
+                #notification_approver(doc)
             elif item.type=='Is Department Approver':
                 deprt_approver_field=item.department_approver_field_name
                 department_approver=get_department_approver(deprt_approver_field,user)

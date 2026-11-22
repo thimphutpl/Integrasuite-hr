@@ -22,6 +22,7 @@
   "items",
   "section_break_12",
   "journal_entry",
+  "workflow_state",
   "column_break_13",
   "amended_from"
  ],
@@ -130,13 +131,19 @@
    "options": "Leave Travel Concession",
    "print_hide": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "workflow_state",
+   "fieldtype": "Link",
+   "label": "Workflow State",
+   "options": "Workflow State"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-13 15:49:40.316104",
+ "modified": "2026-11-21 15:51:48.249492",
  "modified_by": "Administrator",
  "module": "Integrasuite HR",
  "name": "Leave Travel Concession",

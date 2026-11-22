@@ -10,12 +10,13 @@ from integrasuite.integrasuite_hr.doctype.hr_accounts_settings.hr_accounts_setti
 import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-
+from integrasuite.integrasuite_hr.doctype.custom_workflow.custom_workflow import custom_validate_workflow
 
 class LeaveTravelConcession(Document):
 	def validate(self):
 		self.validate_duplicate()
 		self.calculate_values()
+		custom_validate_workflow(self)
 
 	# def on_submit(self):
 	# 	cc_amount = {}
