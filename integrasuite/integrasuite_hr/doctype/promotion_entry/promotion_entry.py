@@ -24,6 +24,7 @@ class PromotionEntry(Document):
                 self.set_onload("submitted_ep", True)
 
     def validate(self):
+        #workflow
         self.set_month_dates()
         self.check_increment_cycle()
         custom_validate_workflow(self)
