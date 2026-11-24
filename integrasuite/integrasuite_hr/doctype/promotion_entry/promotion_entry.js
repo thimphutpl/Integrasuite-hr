@@ -45,21 +45,40 @@ frappe.ui.form.on('Promotion Entry', {
 		}
 	},
 
-	get_employee_details: function (frm) {
-		return frappe.call({
+	// get_employee_details: function (frm) {
+	// 	return frappe.call({
+	// 		doc: frm.doc,
+	// 		method: 'fill_employee_details',
+	// 		callback: function(r) {
+	// 			if (r.docs[0].employees){
+	// 				frappe.call({
+	// 					method: "check_increment_cycle",
+	// 					doc: frm.doc
+	// 				})
+	// 				frm.save();
+	// 				frm.refresh();
+	// 			}
+	// 		}
+	// 	})
+	// },
+	get_employee_details: async function (frm) {
+		const response = await frappe.call({
 			doc: frm.doc,
-			method: 'fill_employee_details',
-			callback: function(r) {
-				if (r.docs[0].employees){
-					frappe.call({
-						method: "check_increment_cycle",
-						doc: frm.doc
-					})
-					frm.save();
-					frm.refresh();
-				}
-			}
-		})
+			method: "fill_employee_details"
+		});
+	
+		if (!response.docs?.[0]?.employees?.length) {
+			return;
+		}
+	
+		await frappe.call({
+			doc: frm.doc,
+			method: "check_increment_cycle"
+		});
+	
+		frm.refresh_field("employees");
+		frm.dirty();
+		await frm.save();
 	},
 
 	create_employee_promotions: function(frm) {

@@ -32,12 +32,14 @@ class TravelAuthorization(Document):
 		validate_active_employee(self.employee)
 		self.validate_travel_dates()
 		self.validate_travel_last_day()
+		self.validate_approved_leave_overlap()
 		self.set_reports_to_inernational()
 		self.validate_exchange_rate()
 		self.set_status()
 		self.make_travel_advance()
 		self.validate_estimated_amount()
 		custom_validate_workflow(self)
+		
 		# validate_workflow_states(self)
 		# if self.workflow_state != "Approved":
 		# 	notify_workflow_states(self)
@@ -45,7 +47,36 @@ class TravelAuthorization(Document):
 	def on_update(self):
 		self.check_date_overlap()
 		self.validate_duplicate_entry()
+		
+	def validate_approved_leave_overlap(self):
+		if not self.employee:
+			return
 
+		for row in self.get("items") or []:
+			if not row.from_date:
+				continue
+
+			travel_from = getdate(row.from_date)
+			travel_to = getdate(row.to_date or row.from_date)
+
+			leave = frappe.db.exists(''
+				"Leave Application",
+				{
+					"employee": self.employee,
+					"docstatus": 1,
+					"status": "Approved",
+					"from_date": ["<=", travel_to],
+					"to_date": [">=", travel_from],
+				},
+			)
+
+			if leave:
+				frappe.throw(
+					_(
+						"Travel Itinerary row {0} leave overlaps approve"
+						"Leave Application {1}."
+					).format(row.idx, leave)
+				)
 	def on_submit(self):
 		# custom_validate_workflow(self)
 		# notify_workflow_states(self)

@@ -12,7 +12,8 @@ app_logo_url = "/assets/integrasuite/images/integra_hr_bold_v2.svg"
 add_to_apps_screen = [
     {
         "name": "integrasuite",
-        "logo": "/assets/integrasuite/images/integra_hr_bold_v2.svg",
+        # "logo": "/assets/integrasuite/images/integra_hr_bold_v2.svg",
+        "logo": "/assets/hrms/images/frappe-hr-logo.svg",
         "title": "Integra HR",
         "route": "/desk/employee",
         "sequence_id": 3,
