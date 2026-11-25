@@ -5,6 +5,7 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
+from frappe.utils import nowdate
 # from erpnext.custom_workflow import validate_workflow_states, notify_workflow_states
 from integrasuite.custom_function.hr_custom_function import get_officiating_employee
 
@@ -30,12 +31,16 @@ class EmployeeSeparationClearance(Document):
         #         "All clearances must be completed before submission."
         #     )
     def on_submit(self):
+    
         # self.check_signatures()
         self.update_reference()
         if self.icthr:
             approver=self.icthr
             self.send_notification(approver)
-
+        self.update_employee() # update employee left in employee master.
+        self.deactivate_salary_structures() # make in-atcive employee in salary structure to No.
+        
+        
     def send_next_approver_email(self):
         if self.is_new():
             return
@@ -115,6 +120,63 @@ class EmployeeSeparationClearance(Document):
                         _("Only the assigned approver can grant {0} clearance.")
                         .format(label)
                 )
+    # def update_employee(self):
+    #     emp = frappe.get_doc("Employee", self.employee)
+    #     if emp.status != "Left":
+    #         emp.status = "Left"
+    #         emp.employment_status = "Left"
+    #         emp.relieving_date = self.separation_date
+    #         emp.reason_for_resignation = self.reason_for_resignation
+    #         history = emp.append("internal_work_history")
+    #         history.reference_doctype = "Employee Separation"
+    #         history.reference_docname = self.employee_separation_id
+    #         history.from_date = self.separation_date
+    #         emp.flags.ignore_permissions = 1
+    #         emp.save()
+    def update_employee(self):
+        emp = frappe.get_doc("Employee", self.employee)
+        if emp.status == "Left":
+            return
+
+        if not emp.relieving_date:
+            frappe.throw(
+                _("Set the Relieving Date on Employee {0} before submitting the clearance.").format(
+                    emp.name
+                )
+            )
+
+        separation = frappe.get_doc("Employee Separation", self.employee_separation_id)
+        emp.status = "Left"
+        emp.employment_status = "Left"
+
+        if separation.reason_for_separation:
+            emp.reason_for_resignation = separation.reason_for_separation
+
+        history = emp.append("internal_work_history")
+        history.reference_doctype = "Employee Separation"
+        history.reference_docname = separation.name
+        history.from_date = emp.relieving_date
+
+        emp.save(ignore_permissions=True)
+            
+    def deactivate_salary_structures(self):
+        active_structures = frappe.get_all(
+            "Salary Structure",
+            filters={
+                "employee": self.employee,
+                "is_active": "Yes",
+                "docstatus": ["!=", 2],
+            },
+            pluck="name",
+        )
+
+        to_date = nowdate()
+        for name in active_structures:
+            salary_structure = frappe.get_doc("Salary Structure", name)
+            salary_structure.is_active = "No"
+            salary_structure.to_date = to_date
+            salary_structure.save(ignore_permissions=True)
+    
     def workflow_action(self):  
         action = frappe.request.form.get('action')
         
