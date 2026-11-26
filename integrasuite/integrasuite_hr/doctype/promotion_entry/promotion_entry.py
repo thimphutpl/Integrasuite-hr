@@ -10,6 +10,7 @@ from frappe.utils import cint, flt, nowdate, add_days, getdate, fmt_money, add_t
 from frappe import _
 from erpnext.accounts.utils import get_fiscal_year
 from erpnext.setup.doctype.employee.employee import get_holiday_list_for_employee
+from decimal import Decimal, ROUND_HALF_UP
 # from erpnext.accounts.doctype.business_activity.business_activity import get_default_ba
 import math
 from integrasuite.integrasuite_hr.doctype.custom_workflow.custom_workflow import custom_validate_workflow
@@ -48,6 +49,55 @@ class PromotionEntry(Document):
         # if self.promotions_submitted == 1:
         # 	frappe.throw("Please cancel employee promotions first.")
         self.remove_employee_promotions()
+    
+    def calculate_promotion_basic(
+        self,
+        basic_for_promotion,
+        old_grade_rate,
+        new_grade_minimum,
+        new_grade_rate,
+        new_grade_maximum,
+    ):
+        basic = Decimal(str(basic_for_promotion))
+        old_rate = Decimal(str(old_grade_rate)) / 100
+        minimum = Decimal(str(new_grade_minimum))
+        new_rate = Decimal(str(new_grade_rate)) / 100
+        maximum = Decimal(str(new_grade_maximum))
+        whole = Decimal("1")
+
+        if basic <= 0 or minimum <= 0 or maximum < minimum:
+            raise ValueError("Check the employee's basic salary and promotion grade scale.")
+        if old_rate <= 0 or new_rate <= 0:
+            raise ValueError("Both grade increment rates must be greater than zero.")
+
+        increment = (basic * old_rate).quantize(whole, rounding=ROUND_HALF_UP)
+        target = basic + increment
+        multiplier = 1 + new_rate
+
+        if basic < minimum:
+            # Clause (b) gives one higher-grade step when the gap is too small.
+            steps = 1 if minimum - basic < increment else 0
+            salary = (minimum * multiplier**steps).quantize(
+                whole, rounding=ROUND_HALF_UP
+            )
+        else:
+            steps = 0
+            unrounded_salary = minimum
+            salary = minimum.quantize(whole, rounding=ROUND_HALF_UP)
+
+            while salary < target and salary < maximum:
+                steps += 1
+                unrounded_salary *= multiplier
+                salary = unrounded_salary.quantize(whole, rounding=ROUND_HALF_UP)
+
+        if salary > maximum or salary < target:
+            raise ValueError("The promoted grade scale cannot provide the required basic.")
+
+        return {
+            "promotion_target": target,
+            "promotion_steps": steps,
+            "new_basic": salary,
+        }
 
     @frappe.whitelist()
     def check_increment_cycle(self):
@@ -185,17 +235,21 @@ class PromotionEntry(Document):
         
         current_increment = frappe.db.get_value("Employee Grade", emp.grade, "increment_value")
         new_grade = frappe.db.get_value("Employee Grade", emp.grade, "promotion_grade")
-        #frappe.throw(str(emp))
+        #new_lower_limit=frappe.db.get_value("Employee Grade", new_grade, "lower_limit")
+        
         years_to_add = flt(frappe.db.get_value("Employee Grade", new_grade, "promotion_eligibility_years"))
         old_promo_date = emp.promotion_due_date
         new_promot_date = add_to_date(old_promo_date, years=years_to_add)
-        if not new_grade:
-            frappe.throw("Promote to Grade not set for Employee {} in Employee Grade".format(employee))
+        # if not new_grade:
+        #     frappe.throw("Promote to Grade not set for Employee {} in Employee Grade".format(employee))
+        new_grade = frappe.db.get_value(
+            "Employee Grade", emp.grade, "promotion_grade"
+        )
         new_lower_limit = frappe.db.get_value("Employee Grade", new_grade, "lower_limit")
         method=frappe.db.get_value("Employee Grade", new_grade, "increment_method")
         increment = frappe.db.get_value("Employee Grade", new_grade, "increment_value")
-        if method =='Percent':
-            new_increment= flt(increment/100)*flt(basic_pay)
+        if method == "Percent":
+            new_increment = flt(new_lower_limit) * flt(increment) / 100
         else:
             new_increment = frappe.db.get_value("Employee Grade", new_grade, "increment_value")
         
@@ -203,13 +257,44 @@ class PromotionEntry(Document):
         # if personal_pay > 0:
         # 	ratio = ((flt(basic_pay) + flt(personal_pay))-flt(new_lower_limit))/flt(new_increment)
         # else:
+        
+        # if flt(basic_pay) > new_lower_limit:
+        #     current_basic_inrt=flt(basic_pay) * flt(increment/100)
+        #     current=new_lower_limit
+        #     while True:
+        #         increment_amt=current * flt(increment/100)
+        #         new_value=increment_amt+current
+                
+        #         current = new_value
 
-        new_basic_increment = flt(basic_pay)+flt(new_increment)
+        #         if current >= flt(basic_pay) and increment_amt>= current_basic_inrt:
+        #             break
+
+        #     #frappe.throw(str(current))
+        #     new_basic_increment=current
+
+
+        # else:
+        #     current_basic_inrt=flt(basic_pay) * flt(increment/100)
+        #     current=flt(basic_pay)
+        #     while True:
+        #         increment_amt=current * flt(increment/100)
+        #         new_value=increment_amt+current
+                
+        #         current = new_value
+
+        #         if current >= new_lower_limit and increment_amt>= current_basic_inrt:
+        #             break
+            
+                        #frappe.throw(str(current))
+            # new_basic_increment=current
+            #frappe.throw("ss")
+        #new_basic_increment = flt(basic_pay)+flt(new_increment)
         # frappe.throw(str(new_basic_increment))
-        if flt(new_basic_increment) < flt(new_lower_limit):
-            new_basic_increment = flt(new_lower_limit)
-        elif flt(new_basic_increment) > flt(new_upper_limit):
-            new_basic_increment = flt(new_upper_limit) 
+        # if flt(new_basic_increment) < flt(new_lower_limit):
+        #     new_basic_increment = flt(new_lower_limit)
+        # elif flt(new_basic_increment) > flt(new_upper_limit):
+        #     new_basic_increment = flt(new_upper_limit) 
         
         '''
         ratio = ((flt(basic_pay) + flt(new_increment))-flt(new_lower_limit))/flt(new_increment)
@@ -225,7 +310,23 @@ class PromotionEntry(Document):
 
         
         '''
-        amount = new_basic_increment
+        current_method = frappe.db.get_value(
+            "Employee Grade", emp.grade, "increment_method"
+        )
+
+        if current_method != "Percent" or method != "Percent":
+            frappe.throw("The promotion calculation requires percentage-based grade increments.")
+
+        result = self.calculate_promotion_basic(
+            basic_for_promotion=basic_pay,
+            old_grade_rate=current_increment,
+            new_grade_minimum=new_lower_limit,
+            new_grade_rate=increment,
+            new_grade_maximum=new_upper_limit,
+        )
+
+        amount = flt(result["new_basic"])
+        #frappe.throw(str(flt(amount)*0.05))
         return new_grade, new_increment, amount, new_promot_date
 
 
