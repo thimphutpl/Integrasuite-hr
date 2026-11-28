@@ -57,41 +57,82 @@ class PromotionEntry(Document):
         new_grade_minimum,
         new_grade_rate,
         new_grade_maximum,
+        old_method="Percent",
+        new_method="Percent",
     ):
         basic = Decimal(str(basic_for_promotion))
-        old_rate = Decimal(str(old_grade_rate)) / 100
+        old_rate = Decimal(str(old_grade_rate))
+        new_rate = Decimal(str(new_grade_rate))
         minimum = Decimal(str(new_grade_minimum))
-        new_rate = Decimal(str(new_grade_rate)) / 100
         maximum = Decimal(str(new_grade_maximum))
         whole = Decimal("1")
 
         if basic <= 0 or minimum <= 0 or maximum < minimum:
-            raise ValueError("Check the employee's basic salary and promotion grade scale.")
+            frappe.throw("Invalid basic salary or salary scale.")
+
         if old_rate <= 0 or new_rate <= 0:
-            raise ValueError("Both grade increment rates must be greater than zero.")
+            frappe.throw("Increment value must be greater than zero.")
 
-        increment = (basic * old_rate).quantize(whole, rounding=ROUND_HALF_UP)
+        if old_method not in ("Percent", "Lumpsum"):
+            frappe.throw("Invalid current grade increment method.")
+
+        if new_method not in ("Percent", "Lumpsum"):
+            frappe.throw("Invalid new grade increment method.")
+
+        # Calculate current grade increment
+        if old_method == "Percent":
+            increment = basic * old_rate / 100
+        else:
+            increment = old_rate
+
+        increment = increment.quantize(
+            whole, rounding=ROUND_HALF_UP
+        )
+
         target = basic + increment
-        multiplier = 1 + new_rate
 
+        # Existing promotion calculation
         if basic < minimum:
-            # Clause (b) gives one higher-grade step when the gap is too small.
             steps = 1 if minimum - basic < increment else 0
-            salary = (minimum * multiplier**steps).quantize(
+
+            if new_method == "Percent":
+                salary = minimum * (1 + new_rate / 100)**steps
+            else:
+                salary = minimum + (new_rate * steps)
+
+            salary = salary.quantize(
                 whole, rounding=ROUND_HALF_UP
             )
+
         else:
             steps = 0
             unrounded_salary = minimum
-            salary = minimum.quantize(whole, rounding=ROUND_HALF_UP)
+
+            salary = minimum.quantize(
+                whole, rounding=ROUND_HALF_UP
+            )
 
             while salary < target and salary < maximum:
                 steps += 1
-                unrounded_salary *= multiplier
-                salary = unrounded_salary.quantize(whole, rounding=ROUND_HALF_UP)
+
+                if new_method == "Percent":
+                    unrounded_salary *= 1 + new_rate / 100
+                else:
+                    unrounded_salary += new_rate
+
+                salary = unrounded_salary.quantize(
+                    whole, rounding=ROUND_HALF_UP
+                )
 
         if salary > maximum or salary < target:
-            raise ValueError("The promoted grade scale cannot provide the required basic.")
+            frappe.throw(
+                f"The promoted grade scale cannot provide "
+                f"the required basic.<br>"
+                f"Current Basic: {basic}<br>"
+                f"Required Basic: {target}<br>"
+                f"Calculated Basic: {salary}<br>"
+                f"Upper Limit: {maximum}"
+            )
 
         return {
             "promotion_target": target,
@@ -314,8 +355,8 @@ class PromotionEntry(Document):
             "Employee Grade", emp.grade, "increment_method"
         )
 
-        if current_method != "Percent" or method != "Percent":
-            frappe.throw("The promotion calculation requires percentage-based grade increments.")
+        # if current_method != "Percent" or method != "Percent":
+        #     frappe.throw("The promotion calculation requires percentage-based grade increments.")
 
         result = self.calculate_promotion_basic(
             basic_for_promotion=basic_pay,
@@ -323,12 +364,13 @@ class PromotionEntry(Document):
             new_grade_minimum=new_lower_limit,
             new_grade_rate=increment,
             new_grade_maximum=new_upper_limit,
+            old_method=current_method,
+            new_method=method,
         )
 
         amount = flt(result["new_basic"])
-        #frappe.throw(str(flt(amount)*0.05))
-        return new_grade, new_increment, amount, new_promot_date
 
+        return new_grade, new_increment, amount, new_promot_date
 
     @frappe.whitelist()
     def fill_employee_details(self):
